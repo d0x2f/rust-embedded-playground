@@ -19,6 +19,8 @@ pub struct Timer<'a> {
 }
 
 impl Timer<'_> {
+  // Trigger the given interrupt every interval.
+  // Uses the SysTimer peripheral.
   pub fn init(syst: &mut SYST, interrupt: Interrupt, interval: u64) -> Timer {
     let _x: &'static mut bool = singleton!(TIMER: bool = false).unwrap();
 
