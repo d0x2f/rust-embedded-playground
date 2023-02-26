@@ -13,7 +13,6 @@ use stm32h7xx_hal::prelude::*;
 use stm32h7xx_hal::{interrupt, pac, pac::Interrupt, pac::NVIC};
 
 use cortex_m_rt::entry;
-use cortex_m_semihosting::hprintln;
 
 use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
