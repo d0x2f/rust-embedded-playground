@@ -17,7 +17,7 @@ impl Leds {
     }
   }
 
-  pub fn get_state(&self) -> (PinState, PinState, PinState, PinState) {
+  pub fn get_states(&self) -> (PinState, PinState, PinState, PinState) {
     (
       self.led1.get_state(),
       self.led2.get_state(),
@@ -26,7 +26,47 @@ impl Leds {
     )
   }
 
-  pub fn set_state(
+  pub fn get_states_as_u8(&self) -> u8 {
+    let mut i = 0;
+
+    if self.led1.is_set_high() {
+      i += 1;
+    }
+
+    if self.led2.is_set_high() {
+      i += 2;
+    }
+
+    if self.led3.is_set_high() {
+      i += 4;
+    }
+
+    if self.led4.is_set_high() {
+      i += 8;
+    }
+
+    i
+  }
+
+  pub fn set_states_as_u8(&mut self, i: u8) {
+    Self::set_led_state_bool(&mut self.led1, i & 1 == 1);
+    Self::set_led_state_bool(&mut self.led2, i & 1 << 1 == 1 << 1);
+    Self::set_led_state_bool(&mut self.led3, i & 1 << 2 == 1 << 2);
+    Self::set_led_state_bool(&mut self.led4, i & 1 << 3 == 1 << 3);
+  }
+
+  fn set_led_state_bool<const P: char, const N: u8>(
+    led: &mut Pin<P, N, Output<PushPull>>,
+    high: bool,
+  ) {
+    if high {
+      led.set_high()
+    } else {
+      led.set_low()
+    }
+  }
+
+  pub fn set_states(
     &mut self,
     led1_state: PinState,
     led2_state: PinState,

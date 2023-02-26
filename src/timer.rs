@@ -50,7 +50,7 @@ impl Timer<'_> {
   }
 
   fn reset_remainder(&mut self) {
-    self.syst.set_reload(self.remainder);
+    self.syst.set_reload(self.remainder - 1);
     self.syst.clear_current();
     self.syst.enable_counter();
     self.state = TimerState::WaitingForRemainder

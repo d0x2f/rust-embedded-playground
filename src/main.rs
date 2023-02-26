@@ -65,14 +65,18 @@ fn EXTI0() {
     let mut leds = LEDS.borrow(cs).borrow_mut();
     let leds = leds.as_mut().unwrap();
 
-    const H: PinState = PinState::High;
-    const L: PinState = PinState::Low;
-    match leds.get_state() {
-      (H, L, L, L) => leds.set_state(L, H, L, L),
-      (L, H, L, L) => leds.set_state(L, L, H, L),
-      (L, L, H, L) => leds.set_state(L, L, L, H),
-      (L, L, L, H) => leds.set_state(H, L, L, L),
-      _ => leds.set_state(H, L, L, L),
-    }
+    // Binary count
+    leds.set_states_as_u8((leds.get_states_as_u8() + 1) % 16);
+
+    // // One light a time
+    // const H: PinState = PinState::High;
+    // const L: PinState = PinState::Low;
+    // match leds.get_states() {
+    //   (H, L, L, L) => leds.set_states(L, H, L, L),
+    //   (L, H, L, L) => leds.set_states(L, L, H, L),
+    //   (L, L, H, L) => leds.set_states(L, L, L, H),
+    //   (L, L, L, H) => leds.set_states(H, L, L, L),
+    //   _ => leds.set_states(H, L, L, L),
+    // }
   });
 }
