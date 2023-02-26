@@ -1,12 +1,13 @@
 #![no_main]
 #![no_std]
 
+mod clock_power;
 mod leds;
+mod timer;
 
 use panic_halt as _;
 
 use cortex_m::interrupt as cortex_interrupt;
-use cortex_m::peripheral::syst::SystClkSource;
 
 use stm32h7xx_hal::gpio::PinState;
 use stm32h7xx_hal::prelude::*;
@@ -17,7 +18,9 @@ use cortex_m_rt::entry;
 use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
 
+use clock_power::ClockPower;
 use leds::Leds;
+use timer::Timer;
 
 static LEDS: Mutex<RefCell<Option<Leds>>> = Mutex::new(RefCell::new(None));
 
@@ -29,26 +32,21 @@ fn main() -> ! {
   let mut syst = p.SYST;
   let mut nvic = p.NVIC;
 
-  let pwr = dp.PWR.constrain();
-  let pwrcfg = pwr.freeze();
-  let rcc = dp.RCC.constrain();
-  let ccdr = rcc.freeze(pwrcfg, &dp.SYSCFG);
-
-  let gpiob = dp.GPIOB.split(ccdr.peripheral.GPIOB);
-  let gpioh = dp.GPIOH.split(ccdr.peripheral.GPIOH);
-  let gpioi = dp.GPIOI.split(ccdr.peripheral.GPIOI);
-
   unsafe {
-    cortex_interrupt::enable();
     NVIC::unmask(Interrupt::EXTI0);
   }
 
-  let ticks_per_second = ccdr.clocks.c_ck().to_Hz();
+  let clock_power = ClockPower::init(dp.PWR, dp.RCC, dp.SYSCFG);
 
-  syst.set_clock_source(SystClkSource::Core);
-  syst.set_reload(ticks_per_second / 100); // 10ms
-  syst.clear_current();
-  syst.enable_counter();
+  let mut timer = Timer::init(
+    &mut syst,
+    Interrupt::EXTI0,
+    u64::from(clock_power.core_speed() / 4),
+  );
+
+  let gpiob = dp.GPIOB.split(clock_power.ccdr.peripheral.GPIOB);
+  let gpioh = dp.GPIOH.split(clock_power.ccdr.peripheral.GPIOH);
+  let gpioi = dp.GPIOI.split(clock_power.ccdr.peripheral.GPIOI);
 
   cortex_interrupt::free(|cs| {
     LEDS
@@ -57,11 +55,7 @@ fn main() -> ! {
   });
 
   loop {
-    for _ in 1..=10 {
-      while !syst.has_wrapped() {}
-    }
-
-    nvic.request(Interrupt::EXTI0);
+    timer.check(&mut nvic)
   }
 }
 
